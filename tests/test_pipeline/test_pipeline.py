@@ -573,3 +573,14 @@ def test_backtest_nans_at_beginning_with_mask(ts_name, request):
         metrics=[MAE()],
         n_folds=[mask],
     )
+
+
+def test_pipeline_with_deepmodel(example_tsds):
+    from etna.models.nn import RNN
+
+    pipeline = Pipeline(
+        model=RNN(input_size=1, encoder_length=14, decoder_length=14, trainer_kwargs=dict(max_epochs=1)),
+        transforms=[],
+        horizon=2,
+    )
+    _ = pipeline.backtest(ts=example_tsds, metrics=[MAE()], n_folds=2, aggregate_metrics=True)
