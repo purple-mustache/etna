@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 - Lambda transform ([#762](https://github.com/tinkoff-ai/etna/issues/762))
 - 
-- 
+- LSTM based RNN and native deep models base classes ([#776](https://github.com/tinkoff-ai/etna/pull/776))
 - 
 - 
 - 
