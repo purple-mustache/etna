@@ -9,14 +9,16 @@ from etna.transforms.base import PerSegmentWrapper
 from etna.transforms.base import Transform
 
 
-class ImputerMode(str, Enum):
+class ImputerMode(str, Enum, num=0):
     """Enum for different imputation strategy."""
 
-    zero = "zero"
+    constant = "constant"
+    constant_dict = {constant": num}
     mean = "mean"
     running_mean = "running_mean"
     forward_fill = "forward_fill"
     seasonal = "seasonal"
+    constant = "constant"
 
 
 class _OneSegmentTimeSeriesImputerTransform(Transform):
@@ -30,7 +32,7 @@ class _OneSegmentTimeSeriesImputerTransform(Transform):
 
     """
 
-    def __init__(self, in_column: str, strategy: str, window: int, seasonality: int, default_value: Optional[float]):
+    def __init__(self, in_column: str, strategy: str, window: int, seasonality: int, default_value: Optional[float], value:int=0):
         """
         Create instance of _OneSegmentTimeSeriesImputerTransform.
 
@@ -41,7 +43,7 @@ class _OneSegmentTimeSeriesImputerTransform(Transform):
         strategy:
             filling value in missing timestamps:
 
-            - If "zero", then replace missing dates with zeros
+            - If "constant", then replace missing dates with a constant
 
             - If "mean", then replace missing dates using the mean in fit stage.
 
@@ -95,8 +97,8 @@ class _OneSegmentTimeSeriesImputerTransform(Transform):
             raise ValueError("Series hasn't non NaN values which means it is empty and can't be filled.")
         series = raw_series[raw_series.first_valid_index() :]
         self.nan_timestamps = series[series.isna()].index
-        if self.strategy == ImputerMode.zero:
-            self.fill_value = 0
+        if self.strategy == ImputerMode.constant:
+            self.fill_value = ImputerMode.constant_dict[ImputerMode.constant]
         elif self.strategy == ImputerMode.mean:
             self.fill_value = series.mean()
         return self
@@ -163,7 +165,7 @@ class _OneSegmentTimeSeriesImputerTransform(Transform):
         if self.nan_timestamps is None:
             raise ValueError("Trying to apply the unfitted transform! First fit the transform.")
 
-        if self.strategy == ImputerMode.zero or self.strategy == ImputerMode.mean:
+        if self.strategy == ImputerMode.constant or self.strategy == ImputerMode.mean:
             df = df.fillna(value=self.fill_value)
         elif self.strategy == ImputerMode.forward_fill:
             df = df.fillna(method="ffill")
@@ -199,10 +201,11 @@ class TimeSeriesImputerTransform(PerSegmentWrapper):
     def __init__(
         self,
         in_column: str = "target",
-        strategy: str = ImputerMode.zero,
+        strategy: str = ImputerMode.constant,
         window: int = -1,
         seasonality: int = 1,
         default_value: Optional[float] = None,
+        value:int = 0
     ):
         """
         Create instance of TimeSeriesImputerTransform.
@@ -214,7 +217,7 @@ class TimeSeriesImputerTransform(PerSegmentWrapper):
         strategy:
             filling value in missing timestamps:
 
-            - If "zero", then replace missing dates with zeros
+            - If "constant", then replace missing dates with constants
 
             - If "mean", then replace missing dates using the mean in fit stage.
 
@@ -235,6 +238,8 @@ class TimeSeriesImputerTransform(PerSegmentWrapper):
             the length of the seasonality
         default_value:
             value which will be used to impute the NaNs left after applying the imputer with the chosen strategy
+        value:
+            value
 
         Raises
         ------
